@@ -2,16 +2,14 @@
 import { useState } from "react";
 import { css } from "@emotion/react";
 import { createPortal } from "react-dom";
-import type { Flow } from "../types";
-import { getApiBaseUrl } from "../utils";
+import type { Flow, FlowRecommendation } from "../types";
+import { getApiBaseUrl, getFlowsForQuery } from "../utils";
 import { Button } from "./ui/Button";
-import { Input } from "./ui/Input";
 import { FlowList } from "./ui/FlowList";
+import { Search, Bot, X } from "./icons";
 import theme from "../theme";
+
 import {
-  cardStyles,
-  cardHeaderStyles,
-  cardContentStyles,
   dialogOverlayStyles,
   dialogContentStyles,
   dialogHeaderStyles,
@@ -23,129 +21,39 @@ import {
 interface FlowSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  flows: Flow[];
+  recommendations?: FlowRecommendation[];
   onFlowSelect: (flow: Flow) => void;
   isLoading: boolean;
 }
 
-// Icons as SVG components
-const SearchIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <circle cx="11" cy="11" r="8"/>
-    <path d="m21 21-4.35-4.35"/>
-  </svg>
-);
-
-const SendIcon = () => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="m22 2-7 20-4-9-9-4Z" />
-    <path d="M22 2 11 13" />
-  </svg>
-);
-
-const BotIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M12 8V4H8" />
-    <rect width="16" height="12" x="4" y="8" rx="2" />
-    <path d="m9 16 0 0" />
-    <path d="m15 16 0 0" />
-  </svg>
-);
-
-
-
-
-
-const XIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="m18 6-12 12" />
-    <path d="m6 6 12 12" />
-  </svg>
-);
-
-
-
-// Get suggested flows (first 3-4 flows for quick access)
-const getSuggestedFlows = (flows: Flow[]): Flow[] => {
-  // Prioritize onboarding flows first, then feature tours, then others
-  const onboardingFlows = flows.filter(flow => flow.type === 'onboarding')
-  const featureTourFlows = flows.filter(flow => flow.type === 'feature_tour')
-  const otherFlows = flows.filter(flow => flow.type !== 'onboarding' && flow.type !== 'feature_tour')
-  
-  const suggested: Flow[] = []
-  
-  // Add up to 2 onboarding flows
-  suggested.push(...onboardingFlows.slice(0, 2))
-  
-  // Add 1-2 feature tour flows
-  if (suggested.length < 3) {
-    suggested.push(...featureTourFlows.slice(0, 3 - suggested.length))
-  }
-  
-  // Fill remaining slots with other flows
-  if (suggested.length < 3) {
-    suggested.push(...otherFlows.slice(0, 3 - suggested.length))
-  }
-  
-  return suggested.slice(0, 3) // Limit to 3 suggestions
-}
-
 const chatContainerStyles = {
   position: "relative" as const,
-  width: '100%',
+  width: "100%",
 };
 
 // Material Design 3 Search Bar styles
 const md3SearchBarStyles = {
-  position: 'relative' as const,
-  display: 'flex',
-  alignItems: 'center',
-  width: '100%',
+  position: "relative" as const,
+  display: "flex",
+  alignItems: "center",
+  width: "100%",
   height: 56, // MD3 standard height
   backgroundColor: theme.colors.surfaceVariant,
   borderRadius: theme.borderRadius.full, // MD3 search bars are fully rounded
-  border: 'none',
-  overflow: 'hidden' as const,
+  border: "none",
+  overflow: "hidden" as const,
   transition: `all ${theme.animation.duration.normal}`,
-  
-  '&:focus-within': {
+
+  "&:focus-within": {
     backgroundColor: theme.colors.surface,
     boxShadow: theme.elevation.md,
-  }
+  },
 };
 
 const searchIconStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
   width: 48,
   height: 48,
   margin: `0 ${theme.spacing.xs}px`,
@@ -155,95 +63,89 @@ const searchIconStyles = {
 
 const chatInputStyles = {
   flex: 1,
-  height: '100%',
+  height: "100%",
   padding: `0 ${theme.spacing.md}px`,
-  border: 'none',
-  outline: 'none',
-  backgroundColor: 'transparent',
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
+  border: "none",
+  outline: "none",
+  backgroundColor: "transparent",
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
   fontSize: theme.typography.fontSize.base,
   fontWeight: theme.typography.fontWeight.normal,
   color: theme.colors.onSurface,
-  
+
   "&::placeholder": {
     color: theme.colors.onSurfaceVariant,
     fontWeight: theme.typography.fontWeight.normal,
   },
 };
 
-const sendButtonStyles = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: 40,
-  height: 40,
-  margin: `0 ${theme.spacing.xs}px`,
-  padding: 0,
-  borderRadius: theme.borderRadius.full,
-  background: theme.colors.primary,
-  color: theme.colors.onPrimary,
-  border: 'none',
-  cursor: 'pointer',
-  transition: `all ${theme.animation.duration.normal}`,
-  flexShrink: 0,
-
-  '&:hover:not(:disabled)': {
-    background: theme.colors.primary,
-    boxShadow: theme.elevation.sm,
-    filter: 'brightness(1.1)',
-  },
-
-  '&:disabled': {
-    background: theme.colors.disabled,
-    cursor: 'not-allowed',
-    opacity: 0.6,
-  }
+// Suggestion pills styles
+const suggestionPillsContainerStyles = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: theme.spacing.xs,
+  marginTop: theme.spacing.sm,
 };
 
-const quickChipsContainerStyles = {
+const suggestionPillsStyles = {
   display: "flex",
   flexWrap: "wrap" as const,
-  gap: theme.spacing.xs, // Tighter gap for MD3 chips
-  marginTop: theme.spacing.sm,
-  justifyContent: "flex-start", // Left align for better readability
-  alignItems: "center",
+  gap: theme.spacing.xs,
 };
 
-// Material Design 3 Suggestion Chip styles
-const suggestionChipStyles = {
-  height: 32,
-  padding: `0 ${theme.spacing.md}px`,
-  borderRadius: theme.borderRadius.sm, // MD3 uses smaller border radius for chips
-  background: theme.colors.surface,
+const suggestionPillStyles = {
+  display: "flex",
+  alignItems: "center",
+  padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+  backgroundColor: theme.colors.surfaceVariant,
   border: `1px solid ${theme.colors.outline}`,
-  color: theme.colors.onSurfaceVariant,
-  fontSize: theme.typography.fontSize.sm,
+  borderRadius: theme.borderRadius.full,
+  fontSize: theme.typography.fontSize.xs,
   fontWeight: theme.typography.fontWeight.medium,
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
-  cursor: 'pointer',
+  color: theme.colors.onSurfaceVariant,
+  cursor: "pointer",
   transition: `all ${theme.animation.duration.normal}`,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  whiteSpace: 'nowrap' as const,
-  userSelect: 'none' as const,
-  
-  // MD3 interaction states
+  whiteSpace: "nowrap" as const,
+
   "&:hover": {
-    background: theme.colors.surfaceVariant,
-    borderColor: theme.colors.outline,
-    boxShadow: theme.elevation.sm,
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.primary,
+    color: theme.colors.onSurface,
+    transform: "scale(1.02)",
   },
-  
-  "&:focus": {
+
+  "&:focus-visible": {
     outline: `2px solid ${theme.colors.primary}`,
     outlineOffset: 2,
   },
-  
-  "&:active": {
+};
+
+// Scrollable content area styles
+const scrollableContentStyles = {
+  flex: 1,
+  overflowY: "auto" as const,
+  overflowX: "hidden" as const,
+  paddingRight: theme.spacing.xs, // Space for scrollbar
+
+  // Custom scrollbar styling
+  "&::-webkit-scrollbar": {
+    width: 8,
+  },
+
+  "&::-webkit-scrollbar-track": {
     background: theme.colors.surfaceVariant,
-    transform: 'scale(0.98)',
-  }
+    borderRadius: theme.borderRadius.full,
+  },
+
+  "&::-webkit-scrollbar-thumb": {
+    background: theme.colors.outline,
+    borderRadius: theme.borderRadius.full,
+
+    "&:hover": {
+      background: theme.colors.outlineVariant,
+    },
+  },
 };
 
 const chatQueryContainerStyles = {
@@ -253,8 +155,6 @@ const chatQueryContainerStyles = {
   marginTop: theme.spacing.md,
   marginBottom: theme.spacing.md,
 };
-
-
 
 const errorStyles = css`
   padding: 16px;
@@ -274,8 +174,6 @@ const loadingGridStyles = css`
   flex-direction: column;
   gap: 16px;
 `;
-
-
 
 const emptyStateStyles = css`
   text-align: center;
@@ -302,15 +200,20 @@ const emptyDescriptionStyles = css`
 `;
 
 const skeletonCardStyles = {
-  ...cardStyles,
+  borderRadius: theme.borderRadius.lg,
+  border: `1px solid ${theme.colors.outline}`,
+  background: theme.colors.surface,
+  textAlign: "left" as const,
 };
 
 const skeletonHeaderStyles = {
-  ...cardHeaderStyles,
+  padding: theme.spacing.lg,
+  borderBottom: `1px solid ${theme.colors.outline}`,
+  background: theme.colors.surfaceVariant,
 };
 
 const skeletonContentStyles = {
-  ...cardContentStyles,
+  padding: theme.spacing.lg,
 };
 
 const closeButtonStyles = css`
@@ -353,47 +256,25 @@ const closeButtonStyles = css`
 export function FlowSelector({
   isOpen,
   onClose,
-  flows,
+  recommendations,
   onFlowSelect,
   isLoading,
 }: FlowSelectorProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [chatQuery, setChatQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // Get suggested flows for chips
-  const suggestedFlows = getSuggestedFlows(flows);
+  const suggestedFlows =
+    recommendations?.slice(0, 3).map((rec) => rec.flow) || [];
 
-  // Filter flows based on search query
-  const filteredFlows = flows.filter((flow) => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      flow.name.toLowerCase().includes(query) ||
-      flow.description?.toLowerCase().includes(query) ||
-      flow.type.toLowerCase().includes(query)
-    );
-  });
+  const filteredFlows = getFlowsForQuery(recommendations || [], searchQuery);
 
-  const handleChatQuery = () => {
-    setSearchQuery(chatQuery);
-  };
-
-  const handleSuggestionChip = (flow: Flow) => {
-    // Directly select the flow instead of searching
-    handleFlowSelect(flow);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleChatQuery();
-    }
+  const handleSuggestionPillClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
   };
 
   const handleFlowSelect = async (flow: Flow) => {
     try {
       setError(null);
-      // Fetch complete flow details including steps
       const baseUrl = getApiBaseUrl();
       const response = await fetch(`${baseUrl}/api/flows/${flow.id}`);
       const data = await response.json();
@@ -411,10 +292,6 @@ export function FlowSelector({
       setError("Failed to load flow details");
     }
   };
-
-
-
-
 
   if (!isOpen) return null;
 
@@ -462,7 +339,7 @@ export function FlowSelector({
           dialogContentStyles,
           {
             maxWidth: 700,
-            width: '85vw',
+            width: "85vw",
           },
         ]}
         onClick={(e) => e.stopPropagation()}
@@ -473,14 +350,15 @@ export function FlowSelector({
             onClick={onClose}
             aria-label="Close modal"
           >
-            <XIcon />
+            <X size={20} />
           </Button>
           <h2 css={dialogTitleStyles}>
-            <BotIcon />
+            <Bot size={20} />
             Let's get you started!
           </h2>
           <p css={dialogDescriptionStyles}>
-            Choose a guided tour below to learn the features that matter most to you.
+            Choose a guided tour below to learn the features that matter most to
+            you.
           </p>
         </div>
 
@@ -490,7 +368,7 @@ export function FlowSelector({
             display: "flex",
             flexDirection: "column" as const,
             gap: 20,
-            flex: 1,
+            height: 500, // Fixed height to prevent modal from changing size
             overflow: "hidden" as const,
             position: "relative" as const,
 
@@ -502,7 +380,7 @@ export function FlowSelector({
               right: 0,
               bottom: 0,
               background:
-                'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23f1f5f9\' fill-opacity=\'0.4\'%3E%3Ccircle cx=\'20\' cy=\'20\' r=\'1\'/%3E%3C/g%3E%3C/svg%3E") repeat',
+                "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f1f5f9' fill-opacity='0.4'%3E%3Ccircle cx='20' cy='20' r='1'/%3E%3C/g%3E%3C/svg%3E\") repeat",
               opacity: 0.5,
               zIndex: 0,
             },
@@ -513,104 +391,93 @@ export function FlowSelector({
             },
           }}
         >
-          {/* Chat Query Bar */}
+          {/* Search Bar */}
           <div css={chatQueryContainerStyles}>
-            {/* MD3 Search Bar */}
             <div css={chatContainerStyles}>
               <div css={md3SearchBarStyles}>
                 <div css={searchIconStyles}>
-                  <SearchIcon />
+                  <Search size={20} />
                 </div>
                 <input
                   css={chatInputStyles}
                   placeholder="Search flows or try a suggestion below…"
-                  value={chatQuery}
-                  onChange={(e) => setChatQuery(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   type="text"
                 />
-                {chatQuery.trim() && (
-                  <Button
-                    css={sendButtonStyles}
-                    onClick={handleChatQuery}
-                  >
-                    <SendIcon />
-                  </Button>
-                )}
               </div>
             </div>
 
-            {/* Suggestion Chips */}
             {suggestedFlows.length > 0 && (
-              <div css={quickChipsContainerStyles}>
-                {suggestedFlows.map((flow) => (
-                  <button
-                    key={flow.id}
-                    css={suggestionChipStyles}
-                    onClick={() => handleSuggestionChip(flow)}
-                    type="button"
-                  >
-                    {flow.name}
-                  </button>
-                ))}
+              <div css={suggestionPillsContainerStyles}>
+                <div css={suggestionPillsStyles}>
+                  {suggestedFlows.map((flow) => (
+                    <button
+                      key={flow.id}
+                      css={suggestionPillStyles}
+                      onClick={() => handleSuggestionPillClick(flow.name)}
+                      type="button"
+                      title={`Search for "${flow.name}"`}
+                    >
+                      {flow.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Error state */}
-          {error && (
-            <div css={errorStyles}>
-              <p css={errorTextStyles}>{error}</p>
-            </div>
-          )}
-
-          {/* Loading state */}
-          {isLoading && (
-            <div css={loadingGridStyles}>
-              {Array.from({ length: 6 }, (_, i) => (
-                <SkeletonCard key={i} />
-              ))}
-            </div>
-          )}
-
-          {/* Flows list */}
-          {!isLoading && filteredFlows.length > 0 && (
-            <FlowList 
-              flows={filteredFlows} 
-              onFlowSelect={handleFlowSelect}
-            />
-          )}
-
-          {/* Empty state */}
-          {!isLoading && filteredFlows.length === 0 && !error && (
-            <div css={emptyStateStyles}>
-              <div css={emptyIconStyles}>
-                <BotIcon />
+          {/* Scrollable Content Area */}
+          <div css={scrollableContentStyles}>
+            {error && (
+              <div css={errorStyles}>
+                <p css={errorTextStyles}>{error}</p>
               </div>
-              <h3 css={emptyTitleStyles}>No flows found</h3>
-              <p css={emptyDescriptionStyles}>
-                {searchQuery
-                  ? "No flows match your search criteria."
-                  : "No active onboarding flows are available at the moment."}
-              </p>
-              {searchQuery && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setChatQuery("");
-                  }}
-                >
-                  Clear search
-                </Button>
-              )}
-            </div>
-          )}
+            )}
+
+            {isLoading && (
+              <div css={loadingGridStyles}>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
+              </div>
+            )}
+
+            {!isLoading && filteredFlows.length > 0 && (
+              <FlowList
+                recommendations={filteredFlows}
+                onFlowSelect={handleFlowSelect}
+              />
+            )}
+
+            {!isLoading && filteredFlows.length === 0 && !error && (
+              <div css={emptyStateStyles}>
+                <div css={emptyIconStyles}>
+                  <Bot size={20} />
+                </div>
+                <h3 css={emptyTitleStyles}>No flows found</h3>
+                <p css={emptyDescriptionStyles}>
+                  {searchQuery
+                    ? "No flows match your search criteria."
+                    : "No active onboarding flows are available at the moment."}
+                </p>
+                {searchQuery && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchQuery("");
+                    }}
+                  >
+                    Clear search
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>,
     document.body
   );
 }
-
