@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react'
 import theme from '../../theme'
+import { Clock, Steps, Play } from '../icons'
 import { buttonStyles, buttonSizes } from '../shared-styles'
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -305,10 +306,7 @@ export const FlowCard: React.FC<FlowCardProps> = ({
             gap: theme.spacing.xs,
             whiteSpace: 'nowrap' as const,
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12,6 12,12 16,14" />
-            </svg>
+            <Clock size={14} />
             <span css={{
               fontSize: theme.typography.fontSize.sm,
               fontWeight: theme.typography.fontWeight.medium,
@@ -332,10 +330,7 @@ export const FlowCard: React.FC<FlowCardProps> = ({
                 gap: theme.spacing.xs,
                 whiteSpace: 'nowrap' as const,
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                  <polyline points="9,9 9,15 15,15"/>
-                </svg>
+                <Steps size={14} />
                 <span css={{
                   fontSize: theme.typography.fontSize.sm,
                   fontWeight: theme.typography.fontWeight.medium,
@@ -379,9 +374,7 @@ export const FlowCard: React.FC<FlowCardProps> = ({
             }
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polygon points="5,3 19,12 5,21" />
-          </svg>
+          <Play size={16} />
           Start Tour
         </button>
       </CardFooter>

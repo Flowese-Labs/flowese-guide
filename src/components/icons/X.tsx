@@ -1,0 +1,17 @@
+import React from 'react';
+import { IconProps } from './types';
+
+export const X: React.FC<IconProps> = ({ size = 20, className }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    className={className}
+  >
+    <path d="m18 6-12 12" />
+    <path d="m6 6 12 12" />
+  </svg>
+);

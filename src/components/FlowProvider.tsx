@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { FlowSelector } from "./FlowSelector";
 import { Tooltip } from "./Tooltip";
 import { Button } from "./ui/Button";
-import { fetchFlows } from "../utils";
-import type { Flow } from "../types";
+import { Bot } from "./icons";
+import { fetchFlows, getFlowRecommendations } from "../utils";
+import type { Flow, FlowRecommendation } from "../types";
 
 interface FlowProviderProps {
   applicationId: string;
@@ -14,25 +15,6 @@ interface FlowProviderProps {
   onStepComplete?: (stepId: string) => void;
 }
 
-// Bot icon as SVG component
-const BotIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path d="M12 8V4H8" />
-    <rect width="16" height="12" x="4" y="8" rx="2" />
-    <path d="m9 16 0 0" />
-    <path d="m15 16 0 0" />
-  </svg>
-);
-
-
-
 export function FlowProvider({
   applicationId,
   baseUrl: _baseUrl,
@@ -40,7 +22,9 @@ export function FlowProvider({
   onStepComplete,
 }: FlowProviderProps) {
   const [showFlowSelection, setShowFlowSelection] = useState(false);
-  const [flows, setFlows] = useState<Flow[]>([]);
+  const [recommendations, setRecommendations] = useState<FlowRecommendation[]>(
+    []
+  );
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +38,11 @@ export function FlowProvider({
       setIsLoading(true);
       try {
         const fetchedFlows = await fetchFlows(applicationId);
-        setFlows(fetchedFlows);
+
+        // Generate recommendations based on current page
+        const currentUrl = window.location.pathname;
+        const flowRecs = getFlowRecommendations(fetchedFlows, currentUrl);
+        setRecommendations(flowRecs);
       } catch (error) {
         console.error("Failed to fetch flows:", error);
       } finally {
@@ -231,14 +219,14 @@ export function FlowProvider({
           css={{ gap: 8 }}
           onClick={handleTriggerClick}
         >
-          <BotIcon />
+          <Bot size={16} />
           Guide
         </Button>
 
         <FlowSelector
           isOpen={showFlowSelection}
           onClose={handleFlowSelectionClose}
-          flows={flows}
+          recommendations={recommendations}
           onFlowSelect={handleFlowSelect}
           isLoading={isLoading}
         />
@@ -256,7 +244,7 @@ export function FlowProvider({
         css={{ gap: 8 }}
         onClick={handleTriggerClick}
       >
-        <BotIcon />
+        <Bot size={16} />
         Guide
       </Button>
 
@@ -264,7 +252,7 @@ export function FlowProvider({
       <FlowSelector
         isOpen={showFlowSelection}
         onClose={handleFlowSelectionClose}
-        flows={flows}
+        recommendations={recommendations}
         onFlowSelect={handleFlowSelect}
         isLoading={isLoading}
       />

@@ -24,6 +24,16 @@ export interface Flow {
   updatedAt: string;
   applicationId?: string;
   application?: { name: string } | null;
+  // Page-aware flow fields
+  triggerConditions?: string; // Natural language prerequisites
+  triggerUrls?: string[]; // Array of URLs where flow can be triggered
+  context?: string; // Rich context for LLM understanding
+}
+
+export interface FlowRecommendation {
+  flow: Flow;
+  priority: "page-matched" | "other";
+  isRecommended: boolean;
 }
 
 export interface OnboardingState {

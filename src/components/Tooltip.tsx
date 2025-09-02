@@ -5,6 +5,7 @@ import { css } from '@emotion/react';
 import type { FlowStep, TooltipPosition } from "../types";
 import { calculateTooltipPosition, isElementInViewport } from "../utils";
 import { Button } from "./ui/Button";
+import { X, ChevronLeft, ChevronRight, MousePointer, Navigation } from "./icons";
 import theme from "../theme";
 import { badgeStyles, badgeVariants, flexBetween } from "./shared-styles";
 
@@ -18,39 +19,6 @@ interface TooltipProps {
   currentStepIndex: number;
   totalSteps: number;
 }
-
-// Icons as SVG components
-const XIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m18 6-12 12" />
-    <path d="m6 6 12 12" />
-  </svg>
-);
-
-const ChevronLeftIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m15 18-6-6 6-6" />
-  </svg>
-);
-
-const ChevronRightIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m9 18 6-6-6-6" />
-  </svg>
-);
-
-const MousePointerIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-    <path d="m13 13 6 6" />
-  </svg>
-);
-
-const NavigationIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
-  </svg>
-);
 
 const overlayStyles = {
   position: 'fixed' as const,
@@ -304,7 +272,7 @@ export function Tooltip({
       <div css={tooltipHeaderStyles}>
         <div css={tooltipTitleStyles}>
           <div css={iconWrapperStyles}>
-            <MousePointerIcon />
+            <MousePointer size={16} />
           </div>
           <span>{step.title}</span>
         </div>
@@ -313,7 +281,7 @@ export function Tooltip({
           css={{ height: 24, width: 24, padding: 0 }}
           onClick={onDismiss}
         >
-          <XIcon />
+          <X size={12} />
         </Button>
       </div>
 
@@ -328,7 +296,7 @@ export function Tooltip({
           <div css={navigationHintStyles}>
             <div css={navigationHintHeaderStyles}>
               <div             css={[iconWrapperStyles, { background: theme.colors.primaryContainer, color: theme.colors.onPrimaryContainer }]}>
-                <NavigationIcon />
+                <Navigation size={12} />
               </div>
               <p css={navigationHintTitleStyles}>
                 Navigation Required
@@ -374,7 +342,7 @@ export function Tooltip({
             onClick={onPrevious}
             disabled={!canGoPrevious}
           >
-            <ChevronLeftIcon />
+            <ChevronLeft size={12} />
             Previous
           </Button>
 
@@ -388,7 +356,7 @@ export function Tooltip({
             {canGoNext ? (
               <>
                 Next
-                <ChevronRightIcon />
+                <ChevronRight size={12} />
               </>
             ) : (
               "Finish"
