@@ -8,7 +8,6 @@ import {
 import type {
   OnboardingState,
   OnboardingAction,
-  Flow,
   OnboardingGuideConfig,
 } from "../types";
 import { fetchFlows } from "../utils";
@@ -27,7 +26,7 @@ const initialState: OnboardingState = {
 // Reducer
 function onboardingReducer(
   state: OnboardingState,
-  action: OnboardingAction,
+  action: OnboardingAction
 ): OnboardingState {
   switch (action.type) {
     case "SET_VISIBLE":
@@ -149,21 +148,3 @@ export function useFlow() {
   }
   return context;
 }
-
-// Helper functions
-export function getCurrentActionStep(flow: Flow) {
-  if (!Array.isArray(flow.steps) || flow.steps.length === 0) {
-    return null;
-  }
-
-  return flow.steps[0]; // For now, just return the first step
-}
-
-export function getActionStepsCount(flow: Flow): number {
-  if (!Array.isArray(flow.steps)) {
-    return 0;
-  }
-
-  return flow.steps.length;
-}
-

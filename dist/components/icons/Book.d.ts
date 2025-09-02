@@ -1,0 +1,4 @@
+import React from 'react';
+import { IconProps } from './types';
+export declare const Book: React.FC<IconProps>;
+//# sourceMappingURL=Book.d.ts.map

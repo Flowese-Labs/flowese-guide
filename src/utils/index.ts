@@ -1,4 +1,10 @@
-import type { Flow, FlowStep, TooltipPosition } from "../types";
+import type { Flow, TooltipPosition } from "../types";
+export {
+  getFlowRecommendations,
+  type FlowRecommendation,
+} from "./flowRecommendations.js";
+
+export { getFlowsForQuery } from "./flowSearch.js";
 
 // Get the base API URL from environment or fallback
 export function getApiBaseUrl(): string {
@@ -93,39 +99,4 @@ export function calculateTooltipPosition(
       placement: "left",
     };
   }
-}
-
-// Get current action step from flow
-export function getCurrentActionStep(flow: Flow): FlowStep | null {
-  if (!Array.isArray(flow.steps) || flow.steps.length === 0) {
-    return null;
-  }
-
-  return flow.steps[0]; // For now, just return the first step
-}
-
-// Get action steps count
-export function getActionStepsCount(flow: Flow): number {
-  if (!Array.isArray(flow.steps)) {
-    return 0;
-  }
-
-  return flow.steps.length;
-}
-
-// Filter flows by type
-export function filterFlowsByType(flows: Flow[], type: string): Flow[] {
-  return flows.filter((flow) => flow.type === type);
-}
-
-// Sort flows by creation date
-export function sortFlowsByDate(
-  flows: Flow[],
-  ascending: boolean = false
-): Flow[] {
-  return [...flows].sort((a, b) => {
-    const dateA = new Date(a.createdAt).getTime();
-    const dateB = new Date(b.createdAt).getTime();
-    return ascending ? dateA - dateB : dateB - dateA;
-  });
 }

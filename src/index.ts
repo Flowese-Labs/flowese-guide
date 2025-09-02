@@ -24,10 +24,6 @@ export {
   fetchFlows,
   isElementInViewport,
   calculateTooltipPosition,
-  getCurrentActionStep,
-  getActionStepsCount,
-  filterFlowsByType,
-  sortFlowsByDate,
 } from "./utils";
 
 // Default export for easy importing
